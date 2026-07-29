@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\aks-project\\\\3-tier-application-to-azure-AKS\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" status)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" log --oneline -5)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" diff .github/workflows/ci-cd-workflow.yaml)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" log --oneline --all -10)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" log --oneline origin/main -5)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" show 50b36cd:.github/workflows/ci-cd-workflow.yaml)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" add .github/workflows/ci-cd-workflow.yaml)",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" commit -m \"fix: use KUBE_CONFIG secret for deploy instead of Azure SP login\")",
+      "Bash(git -C \"d:\\\\DaaS\\\\prashantp-nitor repo\\\\3-tier-application-to-azure-AKS\" push origin main)"
+    ]
+  }
+}
