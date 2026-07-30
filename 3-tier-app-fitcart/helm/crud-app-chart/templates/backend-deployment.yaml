@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: fitcart-backend
 spec:
-  replicas: {{Values.replicaCount}}
+  replicas: {{.Values.replicaCount}}
   selector:
     matchLabels:
       app: fitcart-backend
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: fitcart-backend
-        image: {{Values.backend.image.repository}}/{{Values.backend.image.tag}}
+        image: {{.Values.backend.image.repository}}/{{.Values.backend.image.tag}}
         imagePullPolicy: Always
 
         ports:
