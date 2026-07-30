@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fitcart-backend
+spec:
+  replicas: {{Values.replicaCount}}
+  selector:
+    matchLabels:
+      app: fitcart-backend
+  template:
+    metadata:
+      labels:
+        app: fitcart-backend
+    spec:
+      containers:
+      - name: fitcart-backend
+        image: {{Values.backend.image.repository}}/{{Values.backend.image.tag}}
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8080
+
+        env:
+        - name: DB_HOST
+          value: postgres
+
+        - name: DB_PORT
+          value: "5432"
+
+        - name: DB_NAME
+          value: fitcart
+
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+
+        - name: FRONTEND_ORIGIN
+          value: "*"

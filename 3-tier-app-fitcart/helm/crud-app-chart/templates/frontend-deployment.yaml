@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fitcart-frontend
+spec:
+  replicas: {{Values.replicaCount}}
+  selector:
+    matchLabels:
+      app: fitcart-frontend
+  template:
+    metadata:
+      labels:
+        app: fitcart-frontend
+    spec:
+      containers:
+      - name: fitcart-frontend
+        image: {{Values.frontend.image.repository}}/{{Values.frontend.image.tag}}
+        ports:
+        - containerPort: 80

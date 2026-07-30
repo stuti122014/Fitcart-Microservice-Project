@@ -1,4 +1,4 @@
-name: CI-CD-AKS
+name: CI-CD-AKS-ACR
 
 on:
   push:
@@ -8,7 +8,6 @@ permissions:
   contents: read
 
 jobs:
-
   build_scan_push:
     runs-on: ubuntu-latest
 
@@ -19,19 +18,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Generate Image Tag (Commit SHA)
       - name: Set Image Tag
         id: tag
         run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      # DockerHub Login
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+      # Login to Azure
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Install Trivy via shell (no action version dependency)
+      # Login to Azure Container Registry
+      - name: Login to ACR
+        run: |
+          az acr login --name devnitoracr001
+
+      # Install Trivy
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -39,37 +41,46 @@ jobs:
 
       # Filesystem Scan
       - name: Trivy Filesystem Scan
-        run: trivy fs --exit-code 0 --severity HIGH,CRITICAL .
+        run: |
+          trivy fs --exit-code 0 --severity HIGH,CRITICAL .
 
-      # Backend Build
+      # Build Backend Image
       - name: Build Backend Image
         run: |
-          docker build -t ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }} ./backend
+          docker build \
+            -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }} \
+            ./backend
 
-      # Backend Image Scan
+      # Scan Backend Image
       - name: Scan Backend Image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}
+          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }}
 
+      # Push Backend Image
       - name: Push Backend Image
         run: |
-          docker push ${{ secrets.DOCKER_REPO_BACKEND }}:${{ steps.tag.outputs.sha }}
+          docker push \
+          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }}
 
-      # Frontend Build
+      # Build Frontend Image
       - name: Build Frontend Image
         run: |
-          docker build -t ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }} ./frontend
+          docker build \
+            -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }} \
+            ./frontend
 
-      # Frontend Image Scan
+      # Scan Frontend Image
       - name: Scan Frontend Image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}
+          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
+      # Push Frontend Image
       - name: Push Frontend Image
         run: |
-          docker push ${{ secrets.DOCKER_REPO_FRONTEND }}:${{ steps.tag.outputs.sha }}
-
-
+          docker push \
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -79,29 +90,34 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Set up kubeconfig from base64-encoded secret
-      - name: Set up kubeconfig
+      # Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Get AKS Credentials
+      - name: Get AKS Credentials
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
 
       # Install Helm
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      # Helm Lint (Prevents YAML mistakes)
+      # Helm Lint
       - name: Helm Lint
         run: helm lint ./helm/crud-app-chart
 
-      # Deploy using Helm
-      - name: Helm Deploy to AKS
+      # Deploy to AKS
+      - name: Helm Deploy
         run: |
           helm upgrade --install crud-app ./helm/crud-app-chart \
             --namespace crud-app \
             --create-namespace \
             --wait \
             --timeout 5m \
-            --set backend.image.repository=${{ secrets.DOCKER_REPO_BACKEND }} \
+            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
             --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
-            --set frontend.image.repository=${{ secrets.DOCKER_REPO_FRONTEND }} \
+            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
             --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
