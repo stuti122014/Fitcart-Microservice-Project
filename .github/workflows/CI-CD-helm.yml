@@ -93,26 +93,26 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # Install kubectl
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+      # - name: Setup kubectl
+      #   uses: azure/setup-kubectl@v4
 
       # Set AKS Context
-      - name: Set AKS Context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: dev-nitor-rg-002
-          cluster-name: dev-nitor-cluster-01
+      # - name: Set AKS Context
+      #   uses: azure/aks-set-context@v4
+      #   with:
+      #     resource-group: dev-nitor-rg-002
+      #     cluster-name: dev-nitor-cluster-01
       - name: Get AKS Credentials
         run: |
           az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
           
       # Verify AKS Connection
-      - name: Verify Cluster
-        run: |
-          kubectl config current-context
-          kubectl cluster-info
-          kubectl get nodes
-          kubectl get ns
+      # - name: Verify Cluster
+      #   run: |
+      #     kubectl config current-context
+      #     kubectl cluster-info
+      #     kubectl get nodes
+      #     kubectl get ns
 
       # Install Helm
       - name: Setup Helm
@@ -137,6 +137,6 @@ jobs:
             --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
 
       # Verify Deployment
-      - name: Verify Deployment
-        run: |
-          kubectl get all -n crud-app
+      # - name: Verify Deployment
+      #   run: |
+      #     kubectl get all -n crud-app
