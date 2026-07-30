@@ -1,7 +1,9 @@
 name: CI-CD-AKS-ACR
+
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -19,9 +21,9 @@ jobs:
 
       - name: Set Image Tag
         id: tag
-        run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
-      # Login to Azure
+      # Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -38,22 +40,17 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           trivy --version
 
-      # Filesystem Scan
-      # - name: Trivy Filesystem Scan
-      #   run: |
-      #     trivy fs --exit-code 0 --severity HIGH,CRITICAL .
-
       # Build Backend Image
       - name: Build Backend Image
         run: |
           docker build \
             -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }} \
-            3-tier-app-fitcart/backend
+            ./3-tier-app-fitcart/backend
 
       # Scan Backend Image
       - name: Scan Backend Image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          trivy image --severity HIGH,CRITICAL --exit-code 0 \
           devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }}
 
       # Push Backend Image
@@ -67,13 +64,12 @@ jobs:
         run: |
           docker build \
             -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }} \
-            3-tier-app-fitcart/frontend
-
+            ./3-tier-app-fitcart/frontend
 
       # Scan Frontend Image
       - name: Scan Frontend Image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          trivy image --severity HIGH,CRITICAL --exit-code 0 \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
       # Push Frontend Image
@@ -82,47 +78,62 @@ jobs:
           docker push \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
- deploy:
-  runs-on: ubuntu-latest
-  needs: build_scan_push
+  deploy:
+    needs: build_scan_push
+    runs-on: ubuntu-latest
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v4
+      # Install kubectl
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
-    - name: Set AKS Context
-      uses: azure/aks-set-context@v4
-      with:
-        resource-group: dev-nitor-rg-002
-        cluster-name: dev-nitor-cluster-01
+      # Set AKS Context
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: dev-nitor-rg-002
+          cluster-name: dev-nitor-cluster-01
 
-    - name: Verify Cluster
-      run: |
-        kubectl config current-context
-        kubectl cluster-info
-        kubectl get nodes
+      # Verify AKS Connection
+      - name: Verify Cluster
+        run: |
+          kubectl config current-context
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get ns
 
-    - name: Install Helm
-      uses: azure/setup-helm@v4
+      # Install Helm
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
 
-    - name: Helm Lint
-      run: helm lint ./3-tier-app-fitcart/helm/crud-app-chart
+      # Lint Helm Chart
+      - name: Helm Lint
+        run: |
+          helm lint ./3-tier-app-fitcart/helm/crud-app-chart
 
-    - name: Helm Deploy
-      run: |
-        helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-          --namespace crud-app \
-          --create-namespace \
-          --wait \
-          --timeout 5m \
-          --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
-          --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
-          --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
-          --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
+      # Deploy using Helm
+      - name: Helm Deploy
+        run: |
+          helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+            --namespace crud-app \
+            --create-namespace \
+            --wait \
+            --timeout 10m \
+            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
+            --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
+            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
+            --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
+
+      # Verify Deployment
+      - name: Verify Deployment
+        run: |
+          kubectl get all -n crud-app
