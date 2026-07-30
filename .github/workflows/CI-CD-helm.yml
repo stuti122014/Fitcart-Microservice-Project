@@ -1,5 +1,4 @@
 name: CI-CD-AKS-ACR
-
 on:
   push:
     branches: ["main"]
