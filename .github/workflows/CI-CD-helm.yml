@@ -102,7 +102,10 @@ jobs:
         with:
           resource-group: dev-nitor-rg-002
           cluster-name: dev-nitor-cluster-01
-
+      - name: Get AKS Credentials
+        run: |
+          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
+          
       # Verify AKS Connection
       - name: Verify Cluster
         run: |
