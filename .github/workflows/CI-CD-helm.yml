@@ -1,0 +1,124 @@
+name: CI-CD-AKS-ACR
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  build_scan_push:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.sha }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Image Tag
+        id: tag
+        run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # Login to Azure
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Login to Azure Container Registry
+      - name: Login to ACR
+        run: |
+          az acr login --name devnitoracr001
+
+      # Install Trivy
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy --version
+
+      # Filesystem Scan
+      - name: Trivy Filesystem Scan
+        run: |
+          trivy fs --exit-code 0 --severity HIGH,CRITICAL .
+
+      # Build Backend Image
+      - name: Build Backend Image
+        run: |
+          docker build \
+            -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }} \
+            3-tier-app-fitcart/backend
+
+      # Scan Backend Image
+      - name: Scan Backend Image
+        run: |
+          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }}
+
+      # Push Backend Image
+      - name: Push Backend Image
+        run: |
+          docker push \
+          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.sha }}
+
+      # Build Frontend Image
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }} \
+            3-tier-app-fitcart/frontend
+
+
+      # Scan Frontend Image
+      - name: Scan Frontend Image
+        run: |
+          trivy image --exit-code 0 --severity HIGH,CRITICAL \
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
+
+      # Push Frontend Image
+      - name: Push Frontend Image
+        run: |
+          docker push \
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_scan_push
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Get AKS Credentials
+      - name: Get AKS Credentials
+        run: |
+          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
+
+      # Install Helm
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      # Helm Lint
+      - name: Helm Lint
+        run: helm lint ./helm/crud-app-chart
+
+      # Deploy to AKS
+      - name: Helm Deploy
+        run: |
+          helm upgrade --install crud-app ./helm/crud-app-chart \
+            --namespace crud-app \
+            --create-namespace \
+            --wait \
+            --timeout 5m \
+            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
+            --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
+            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
+            --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
