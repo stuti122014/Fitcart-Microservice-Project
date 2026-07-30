@@ -83,42 +83,47 @@ jobs:
           docker push \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build_scan_push
+ deploy:
+  runs-on: ubuntu-latest
+  needs: build_scan_push
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  steps:
+    - uses: actions/checkout@v4
 
-      # Azure Login
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Get AKS Credentials
-      - name: Get AKS Credentials
-        run: |
-          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
 
-      # Install Helm
-      - name: Install Helm
-        uses: azure/setup-helm@v4
+    - name: Set AKS Context
+      uses: azure/aks-set-context@v4
+      with:
+        resource-group: dev-nitor-rg-002
+        cluster-name: dev-nitor-cluster-01
 
-      # Helm Lint
-      - name: Helm Lint
-        run: helm lint ./3-tier-app-fitcart/helm/crud-app-chart
+    - name: Verify Cluster
+      run: |
+        kubectl config current-context
+        kubectl cluster-info
+        kubectl get nodes
 
-      # Deploy to AKS
-      - name: Helm Deploy
-        run: |
-          helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-            --namespace crud-app \
-            --create-namespace \
-            --wait \
-            --timeout 5m \
-            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
-            --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
-            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
-            --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+
+    - name: Helm Lint
+      run: helm lint ./3-tier-app-fitcart/helm/crud-app-chart
+
+    - name: Helm Deploy
+      run: |
+        helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+          --namespace crud-app \
+          --create-namespace \
+          --wait \
+          --timeout 5m \
+          --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
+          --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
+          --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
+          --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
