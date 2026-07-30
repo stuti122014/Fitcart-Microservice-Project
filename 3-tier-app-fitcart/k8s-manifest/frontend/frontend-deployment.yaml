@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fitcart-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fitcart-frontend
+  template:
+    metadata:
+      labels:
+        app: fitcart-frontend
+    spec:
+      containers:
+      - name: fitcart-frontend
+        image: devnitoracr001.azurecr.io/frntndimage:v1
+        ports:
+        - containerPort: 80
