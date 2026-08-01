@@ -139,8 +139,8 @@ jobs:
      # Verify rollout
       - name: Verify Deployment Rollout
         run: |
-            kubectl rollout status deployment/backend-deployment -n crud-app --timeout=5m
-            kubectl rollout status deployment/frontend-deployment -n crud-app --timeout=5m
+            kubectl rollout status deployment/fitcart-backend -n crud-app --timeout=5m
+            kubectl rollout status deployment/fitcart-frontend -n crud-app --timeout=5m
      
       # Verify Deployment
       # - name: Verify Deployment
