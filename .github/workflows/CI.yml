@@ -1,7 +1,9 @@
 name: CI-AKS-ACR
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: read
@@ -17,71 +19,51 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Set Image Version
       - name: Set Image Tag
         id: tag
         run: |
-          IMAGE_TAG="v1.0.0"
-          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "Using Image Tag: ${IMAGE_TAG}"
+          IMAGE_TAG=${GITHUB_REF_NAME}
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Using Image Tag: $IMAGE_TAG"
 
-      # Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Login to Azure Container Registry
       - name: Login to ACR
-        run: |
-          az acr login --name devnitoracr001
+        run: az acr login --name devnitoracr001
 
-      # Install Trivy
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy --version
 
-      # Build Backend Image
       - name: Build Backend Image
         run: |
           docker build \
             -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }} \
             ./3-tier-app-fitcart/backend
 
-      # Scan Backend Image
       - name: Scan Backend Image
         run: |
           trivy image --severity HIGH,CRITICAL --exit-code 0 \
           devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
 
-      # Push Backend Image
       - name: Push Backend Image
         run: |
-          docker push \
-          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
+          docker push devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
 
-      # Build Frontend Image
       - name: Build Frontend Image
         run: |
           docker build \
             -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }} \
             ./3-tier-app-fitcart/frontend
 
-      # Scan Frontend Image
       - name: Scan Frontend Image
         run: |
           trivy image --severity HIGH,CRITICAL --exit-code 0 \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
 
-      # Push Frontend Image
       - name: Push Frontend Image
         run: |
-          docker push \
-          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
-
-      # Show Image Tags
-      - name: Display Image Tags
-        run: |
-          echo "Backend Image : devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}"
-          echo "Frontend Image: devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}"
+          docker push devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
