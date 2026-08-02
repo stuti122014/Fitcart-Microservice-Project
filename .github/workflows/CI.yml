@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
     inputs:
 
+      image_tag:
+        description: "Docker Image Tag (example: v1.0.0)"
+        required: true
+        type: string
+
       build_backend:
         description: "Build Backend Image"
         required: true
@@ -16,10 +21,6 @@ on:
         type: boolean
         default: true
 
-  push:
-    tags:
-      - "v*"
-
 
 permissions:
   contents: read
@@ -27,13 +28,14 @@ permissions:
 
 jobs:
 
+
 # =====================================
-# Backend Image Build & Push
+# Backend Build Scan Push
 # =====================================
 
   backend_build:
 
-    if: ${{ inputs.build_backend == true || github.event_name == 'push' }}
+    if: ${{ inputs.build_backend }}
 
     runs-on: ubuntu-latest
 
@@ -45,21 +47,14 @@ jobs:
 
 
 
-      # Get Image Tag From Git Tag
-
       - name: Set Image Tag
         id: tag
         run: |
-
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            IMAGE_TAG=${GITHUB_REF_NAME}
-          else
-            IMAGE_TAG="manual-${GITHUB_SHA::7}"
-          fi
+          IMAGE_TAG=${{ inputs.image_tag }}
 
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
-          echo "Image Tag: ${IMAGE_TAG}"
+          echo "Using Image Tag: ${IMAGE_TAG}"
 
 
 
@@ -77,9 +72,7 @@ jobs:
 
       - name: Login to ACR
         run: |
-
-          az acr login \
-          --name devnitoracr001
+          az acr login --name devnitoracr001
 
 
 
@@ -87,14 +80,16 @@ jobs:
 
       - name: Install Trivy
         run: |
-
           curl -sfL \
           https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
           | sh -s -- -b /usr/local/bin
 
+          trivy --version
 
 
-      # Build Backend Image
+
+
+      # Backend Build
 
       - name: Build Backend Image
         run: |
@@ -105,7 +100,8 @@ jobs:
 
 
 
-      # Scan Backend
+
+      # Backend Scan
 
       - name: Scan Backend Image
         run: |
@@ -117,7 +113,8 @@ jobs:
 
 
 
-      # Push Backend
+
+      # Backend Push
 
       - name: Push Backend Image
         run: |
@@ -130,14 +127,14 @@ jobs:
 
 
 # =====================================
-# Frontend Image Build & Push
+# Frontend Build Scan Push
 # =====================================
 
 
   frontend_build:
 
 
-    if: ${{ inputs.build_frontend == true || github.event_name == 'push' }}
+    if: ${{ inputs.build_frontend }}
 
 
     runs-on: ubuntu-latest
@@ -153,22 +150,16 @@ jobs:
 
 
 
-      # Get Image Tag From Git Tag
 
       - name: Set Image Tag
         id: tag
         run: |
 
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            IMAGE_TAG=${GITHUB_REF_NAME}
-          else
-            IMAGE_TAG="manual-${GITHUB_SHA::7}"
-          fi
-
+          IMAGE_TAG=${{ inputs.image_tag }}
 
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
-          echo "Image Tag: ${IMAGE_TAG}"
+          echo "Using Image Tag: ${IMAGE_TAG}"
 
 
 
@@ -185,13 +176,15 @@ jobs:
 
 
 
+
+
       # ACR Login
 
       - name: Login to ACR
         run: |
 
-          az acr login \
-          --name devnitoracr001
+          az acr login --name devnitoracr001
+
 
 
 
@@ -206,11 +199,14 @@ jobs:
           https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
           | sh -s -- -b /usr/local/bin
 
+          trivy --version
 
 
 
 
-      # Build Frontend Image
+
+
+      # Frontend Build
 
       - name: Build Frontend Image
         run: |
@@ -223,7 +219,7 @@ jobs:
 
 
 
-      # Scan Frontend
+      # Frontend Scan
 
       - name: Scan Frontend Image
         run: |
@@ -238,10 +234,10 @@ jobs:
 
 
 
-      # Push Frontend
+      # Frontend Push
 
       - name: Push Frontend Image
         run: |
 
           docker push \
-          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}t
