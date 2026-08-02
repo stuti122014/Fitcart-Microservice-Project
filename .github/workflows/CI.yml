@@ -1,69 +1,247 @@
-name: CI-AKS-ACR
+name: CI-AKS-ACR-IMAGE-BUILD
 
 on:
- workflow_dispatch:
-    # tags:
-    #   - "v*"
+  workflow_dispatch:
+    inputs:
+
+      build_backend:
+        description: "Build Backend Image"
+        required: true
+        type: boolean
+        default: true
+
+      build_frontend:
+        description: "Build Frontend Image"
+        required: true
+        type: boolean
+        default: true
+
+  push:
+    tags:
+      - "v*"
+
 
 permissions:
   contents: read
 
+
 jobs:
-  build_scan_push:
+
+# =====================================
+# Backend Image Build & Push
+# =====================================
+
+  backend_build:
+
+    if: ${{ inputs.build_backend == true || github.event_name == 'push' }}
+
     runs-on: ubuntu-latest
 
-    outputs:
-      image_tag: ${{ steps.tag.outputs.image_tag }}
 
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v4
+
+
+
+      # Get Image Tag From Git Tag
 
       - name: Set Image Tag
         id: tag
         run: |
-          IMAGE_TAG=${GITHUB_REF_NAME}
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "Using Image Tag: $IMAGE_TAG"
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            IMAGE_TAG=${GITHUB_REF_NAME}
+          else
+            IMAGE_TAG="manual-${GITHUB_SHA::7}"
+          fi
+
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+          echo "Image Tag: ${IMAGE_TAG}"
+
+
+
+      # Azure Login
 
       - name: Azure Login
         uses: azure/login@v2
+
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+
+
+      # ACR Login
+
       - name: Login to ACR
-        run: az acr login --name devnitoracr001
+        run: |
+
+          az acr login \
+          --name devnitoracr001
+
+
+
+      # Install Trivy
 
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+          curl -sfL \
+          https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sh -s -- -b /usr/local/bin
+
+
+
+      # Build Backend Image
 
       - name: Build Backend Image
         run: |
+
           docker build \
-            -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }} \
-            ./3-tier-app-fitcart/backend
+          -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }} \
+          ./3-tier-app-fitcart/backend
+
+
+
+      # Scan Backend
 
       - name: Scan Backend Image
         run: |
-          trivy image --severity HIGH,CRITICAL --exit-code 0 \
+
+          trivy image \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
           devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
+
+
+
+      # Push Backend
 
       - name: Push Backend Image
         run: |
-          docker push devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
+
+          docker push \
+          devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
+
+
+
+
+
+# =====================================
+# Frontend Image Build & Push
+# =====================================
+
+
+  frontend_build:
+
+
+    if: ${{ inputs.build_frontend == true || github.event_name == 'push' }}
+
+
+    runs-on: ubuntu-latest
+
+
+
+    steps:
+
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+
+
+
+      # Get Image Tag From Git Tag
+
+      - name: Set Image Tag
+        id: tag
+        run: |
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            IMAGE_TAG=${GITHUB_REF_NAME}
+          else
+            IMAGE_TAG="manual-${GITHUB_SHA::7}"
+          fi
+
+
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+          echo "Image Tag: ${IMAGE_TAG}"
+
+
+
+
+
+      # Azure Login
+
+      - name: Azure Login
+        uses: azure/login@v2
+
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+
+
+
+      # ACR Login
+
+      - name: Login to ACR
+        run: |
+
+          az acr login \
+          --name devnitoracr001
+
+
+
+
+
+      # Install Trivy
+
+      - name: Install Trivy
+        run: |
+
+          curl -sfL \
+          https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sh -s -- -b /usr/local/bin
+
+
+
+
+
+      # Build Frontend Image
 
       - name: Build Frontend Image
         run: |
+
           docker build \
-            -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }} \
-            ./3-tier-app-fitcart/frontend
+          -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }} \
+          ./3-tier-app-fitcart/frontend
+
+
+
+
+
+      # Scan Frontend
 
       - name: Scan Frontend Image
         run: |
-          trivy image --severity HIGH,CRITICAL --exit-code 0 \
+
+          trivy image \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
+
+
+
+
+
+
+      # Push Frontend
 
       - name: Push Frontend Image
         run: |
-          docker push devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
+
+          docker push \
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
