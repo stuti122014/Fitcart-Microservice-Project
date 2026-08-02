@@ -1,9 +1,7 @@
-name: CI-CD-AKS-ACR
+name: CI-AKS-ACR
 
 on:
-  push:
-    branches:
-      - main
+   workflow_dispatch:
 
 permissions:
   contents: read
@@ -78,71 +76,4 @@ jobs:
           docker push \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.sha }}
 
-  deploy:
-    needs: build_scan_push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      # Azure Login
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      # Install kubectl
-      # - name: Setup kubectl
-      #   uses: azure/setup-kubectl@v4
-
-      # Set AKS Context
-      # - name: Set AKS Context
-      #   uses: azure/aks-set-context@v4
-      #   with:
-      #     resource-group: dev-nitor-rg-002
-      #     cluster-name: dev-nitor-cluster-01
-      
-      - name: Get AKS Credentials
-        run: |
-          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
-          
-      # Verify AKS Connection
-      # - name: Verify Cluster
-      #   run: |
-      #     kubectl config current-context
-      #     kubectl cluster-info
-      #     kubectl get nodes
-      #     kubectl get ns
-
-      # Install Helm
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-
-      # Lint Helm Chart
-      - name: Helm Lint
-        run: |
-          helm lint ./3-tier-app-fitcart/helm/crud-app-chart
-
-      # Deploy using Helm
-      - name: Helm Deploy
-        run: |
-          helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-            --namespace crud-app \
-            --create-namespace \
-            --wait \
-            --timeout 10m \
-            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
-            --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
-            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
-            --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
-     # Verify rollout
-      - name: Verify Deployment Rollout
-        run: |
-            kubectl rollout status deployment/fitcart-backend -n crud-app --timeout=5m
-            kubectl rollout status deployment/fitcart-frontend -n crud-app --timeout=5m
-     
-      # Verify Deployment
-      # - name: Verify Deployment
-      #   run: |
-      #     kubectl get all -n crud-app
+ 
