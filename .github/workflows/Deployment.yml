@@ -66,12 +66,13 @@ jobs:
       # Helm Chart Validation
       - name: Helm Lint
         run: |
-          helm lint ./3-tier-app-fitcart/helm/crud-app-chart
+          helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
+          -f ./3-tier-app-fitcart/helm/crud-app-chart/dev-values.yaml
 
       - name: Deploy to AKS
         run: |
           helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-            --namespace crud-app \
+            --namespace ${{ inputs.environment }}-crud-app \
             --create-namespace \
             --wait \
             --timeout 10m \
