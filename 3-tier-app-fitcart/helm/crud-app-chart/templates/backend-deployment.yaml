@@ -24,25 +24,25 @@ spec:
         ports:
         - containerPort: 8080
 
-        # Readiness Probe
-        readinessProbe:
-          httpGet:
-            path: /api
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+        # # Readiness Probe
+        # readinessProbe:
+        #   httpGet:
+        #     path: /api
+        #     port: 8080
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        #   failureThreshold: 3
 
-        # Liveness Probe
-        livenessProbe:
-          httpGet:
-            path: /api
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 15
-          timeoutSeconds: 5
-          failureThreshold: 3
+        # # Liveness Probe
+        # livenessProbe:
+        #   httpGet:
+        #     path: /api
+        #     port: 8080
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 15
+        #   timeoutSeconds: 5
+        #   failureThreshold: 3
 
         env:
         - name: DB_HOST
