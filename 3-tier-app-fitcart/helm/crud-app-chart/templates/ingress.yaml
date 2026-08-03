@@ -7,7 +7,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /{{.Values.ingresspathforfrontend}}
+      - path: /
         pathType: Prefix
         backend:
           service:
@@ -15,7 +15,7 @@ spec:
             port:
               number: 80
 
-      - path: /api-{{.Values.ingresspathforbackend}}
+      - path: /api
         pathType: Prefix
         backend:
           service:
