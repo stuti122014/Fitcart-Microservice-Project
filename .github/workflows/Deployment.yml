@@ -110,6 +110,7 @@ jobs:
       #     kubectl get pods -n dev-crud-app -o wide
 
       # # Verify Services
+      
       # - name: Verify Services
       #   run: |
       #     kubectl get svc -n dev-crud-app
