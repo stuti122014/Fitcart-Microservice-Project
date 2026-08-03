@@ -88,39 +88,31 @@ jobs:
             --set backend.image.tag=${{inputs.backendimage_tag }} \
             --set frontend.image.tag=${{inputs.frontendimage_tag }}
      
-      - name: Helm Status
-            
-        if: always()
-        run: |
-             helm status crud-app -n ${{ inputs.environment }}-crud-app   
-      - name: Helm History
-        if: always()
-        run: |
-             helm history crud-app -n ${{ inputs.environment }}-crud-app          
+           
 
-      # # Verify Backend Rollout
-      # - name: Verify Backend Rollout
-      #   run: |
-      #     kubectl rollout status deployment/fitcart-backend \
-      #     -n crud-app \
-      #     --timeout=5m
+      # Verify Backend Rollout
+      - name: Verify Backend Rollout
+        run: |
+          kubectl rollout status deployment/fitcart-backend \
+          -n crud-app \
+          --timeout=5m
 
       # # Verify Frontend Rollout
       # - name: Verify Frontend Rollout
       #   run: |
       #     kubectl rollout status deployment/fitcart-frontend \
-      #     -n crud-app \
+      #     -n dev-crud-app \
       #     --timeout=5m
 
       # # Verify Pods
       # - name: Verify Pods
       #   run: |
-      #     kubectl get pods -n crud-app -o wide
+      #     kubectl get pods -n dev-crud-app -o wide
 
       # # Verify Services
       # - name: Verify Services
       #   run: |
-      #     kubectl get svc -n crud-app
+      #     kubectl get svc -n dev-crud-app
 
       # # Verify Ingress
       # - name: Verify Ingress
