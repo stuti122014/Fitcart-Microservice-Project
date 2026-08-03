@@ -3,11 +3,11 @@ replicaCount: 1
 frontend:
   image:
     repository: devnitoracr001.azurecr.io/frntndimage
-    tag: "v1"
+    # tag: "v1"
 
 backend:
   image:
     repository: devnitoracr001.azurecr.io/backendimage
-    tag: "v1"
+    # tag: "v1"
 
 
