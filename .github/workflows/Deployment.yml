@@ -87,14 +87,16 @@ jobs:
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
             --set backend.image.tag=${{inputs.backendimage_tag }} \
             --set frontend.image.tag=${{inputs.frontendimage_tag }}
-          - name: Helm Status
-                  if: always()
-                  run: |
-                    helm status crud-app -n ${{ inputs.environment }}-crud-app   
-          - name: Helm History
-                  if: always()
-                  run: |
-                    helm history crud-app -n ${{ inputs.environment }}-crud-app          
+     
+      - name: Helm Status
+            
+        if: always()
+        run: |
+             helm status crud-app -n ${{ inputs.environment }}-crud-app   
+      - name: Helm History
+        if: always()
+        run: |
+             helm history crud-app -n ${{ inputs.environment }}-crud-app          
 
       # # Verify Backend Rollout
       # - name: Verify Backend Rollout
