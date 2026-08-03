@@ -9,7 +9,7 @@ on:
         type: string
 
       build_all:
-        description: "Build Backend & Frontend"
+        description: "Build All Image"
         required: true
         type: boolean
         default: false
@@ -18,13 +18,13 @@ on:
         description: "Build Backend Image"
         required: true
         type: boolean
-        default: true
+        default: false
 
       build_frontend:
         description: "Build Frontend Image"
         required: true
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
