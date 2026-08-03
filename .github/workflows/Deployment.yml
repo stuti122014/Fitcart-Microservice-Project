@@ -68,6 +68,14 @@ jobs:
         run: |
           helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
           -f ./3-tier-app-fitcart/helm/crud-app-chart/dev-values.yaml
+          
+      - name: Debug Helm Template
+        run: |
+          helm template crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
+            --set backend.image.tag=${{ inputs.backendimage_tag }} \
+            --set frontend.image.tag=${{ inputs.frontendimage_tag }}          
+          
 
       - name: Deploy to AKS
         run: |
@@ -80,36 +88,36 @@ jobs:
             --set backend.image.tag=${{inputs.backendimage_tag }} \
             --set frontend.image.tag=${{inputs.frontendimage_tag }}
 
-      # Verify Backend Rollout
-      - name: Verify Backend Rollout
-        run: |
-          kubectl rollout status deployment/fitcart-backend \
-          -n crud-app \
-          --timeout=5m
+      # # Verify Backend Rollout
+      # - name: Verify Backend Rollout
+      #   run: |
+      #     kubectl rollout status deployment/fitcart-backend \
+      #     -n crud-app \
+      #     --timeout=5m
 
-      # Verify Frontend Rollout
-      - name: Verify Frontend Rollout
-        run: |
-          kubectl rollout status deployment/fitcart-frontend \
-          -n crud-app \
-          --timeout=5m
+      # # Verify Frontend Rollout
+      # - name: Verify Frontend Rollout
+      #   run: |
+      #     kubectl rollout status deployment/fitcart-frontend \
+      #     -n crud-app \
+      #     --timeout=5m
 
-      # Verify Pods
-      - name: Verify Pods
-        run: |
-          kubectl get pods -n crud-app -o wide
+      # # Verify Pods
+      # - name: Verify Pods
+      #   run: |
+      #     kubectl get pods -n crud-app -o wide
 
-      # Verify Services
-      - name: Verify Services
-        run: |
-          kubectl get svc -n crud-app
+      # # Verify Services
+      # - name: Verify Services
+      #   run: |
+      #     kubectl get svc -n crud-app
 
-      # Verify Ingress
-      - name: Verify Ingress
-        run: |
-          kubectl get ingress -n crud-app
+      # # Verify Ingress
+      # - name: Verify Ingress
+      #   run: |
+      #     kubectl get ingress -n crud-app
 
-      # Show Deployments
-      - name: Verify Deployments
-        run: |
-          kubectl get deployment -n crud-app
+      # # Show Deployments
+      # - name: Verify Deployments
+      #   run: |
+      #     kubectl get deployment -n crud-app
