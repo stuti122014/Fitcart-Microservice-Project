@@ -3,10 +3,14 @@ name: CD-AKS-ACR-DEPLOY
 on:
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: "Docker Image Tag (Example: v1.0.0)"
+      backendimage_tag:
+        description: "Backend Image"
         required: true
         type: string
+      frontendimage_tag:
+        description: "Frontend Image"
+        required: true
+        type: string  
       environment:
             description: "Deployment Environment"
             required: true
@@ -72,8 +76,8 @@ jobs:
             --wait \
             --timeout 10m \
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
-            --set backend.image.tag=${{ inputs.image_tag }} \
-            --set frontend.image.tag=${{ inputs.image_tag }}
+            --set backend.image.tag=${{inputs.backendimage_tag }} \
+            --set frontend.image.tag=${{inputs.frontendimage_tag }}
 
       # Verify Backend Rollout
       - name: Verify Backend Rollout
