@@ -1,5 +1,6 @@
 replicaCount: 1
-
+ingresspathforfrontend: dev
+ingresspathforbackend: dev
 frontend:
   image:
     repository: devnitoracr001.azurecr.io/frntndimage
