@@ -1,17 +1,24 @@
- name: CD-AKS-ACR
+name: CD-AKS-ACR-DEPLOY
 
- on:
+on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker Image Tag (Example: v1.0.0)"
+        required: true
+        type: string
 
- permissions:
+permissions:
   contents: read
 
- jobs:  
-   deploy:
-    
+jobs:
+  deploy:
+
     runs-on: ubuntu-latest
 
     steps:
+
+      # Checkout Repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -22,39 +29,34 @@
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # Install kubectl
-      # - name: Setup kubectl
-      #   uses: azure/setup-kubectl@v4
-
-      # Set AKS Context
-      # - name: Set AKS Context
-      #   uses: azure/aks-set-context@v4
-      #   with:
-      #     resource-group: dev-nitor-rg-002
-      #     cluster-name: dev-nitor-cluster-01
-      
-      - name: Get AKS Credentials
-        run: |
-          az aks get-credentials --resource-group dev-nitor-rg-002 --name dev-nitor-cluster-01 --overwrite-existing
-          
-      # Verify AKS Connection
-      # - name: Verify Cluster
-      #   run: |
-      #     kubectl config current-context
-      #     kubectl cluster-info
-      #     kubectl get nodes
-      #     kubectl get ns
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
       # Install Helm
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      # Lint Helm Chart
+      # Connect to AKS
+      - name: Get AKS Credentials
+        run: |
+          az aks get-credentials \
+            --resource-group dev-nitor-rg-002 \
+            --name dev-nitor-cluster-01 \
+            --overwrite-existing
+
+      # Verify Cluster
+      - name: Verify AKS Connection
+        run: |
+          kubectl config current-context
+          kubectl get nodes
+
+      # Helm Chart Validation
       - name: Helm Lint
         run: |
           helm lint ./3-tier-app-fitcart/helm/crud-app-chart
 
-      # Deploy using Helm
-      - name: Helm Deploy
+      # Deploy Application
+      - name: Deploy to AKS
         run: |
           helm upgrade --install crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
             --namespace crud-app \
@@ -62,13 +64,40 @@
             --wait \
             --timeout 10m \
             --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
-            --set backend.image.tag=${{ needs.build_scan_push.outputs.image_tag }} \
+            --set backend.image.tag=${{ inputs.image_tag }} \
             --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
-            --set frontend.image.tag=${{ needs.build_scan_push.outputs.image_tag }}
-     # Verify rollout
-      - name: Verify Deployment Rollout
-        run: |
-            kubectl rollout status deployment/fitcart-backend -n crud-app --timeout=5m
-            kubectl rollout status deployment/fitcart-frontend -n crud-app --timeout=5m    
+            --set frontend.image.tag=${{ inputs.image_tag }}
 
-   
+      # Verify Backend Rollout
+      - name: Verify Backend Rollout
+        run: |
+          kubectl rollout status deployment/fitcart-backend \
+          -n crud-app \
+          --timeout=5m
+
+      # Verify Frontend Rollout
+      - name: Verify Frontend Rollout
+        run: |
+          kubectl rollout status deployment/fitcart-frontend \
+          -n crud-app \
+          --timeout=5m
+
+      # Verify Pods
+      - name: Verify Pods
+        run: |
+          kubectl get pods -n crud-app -o wide
+
+      # Verify Services
+      - name: Verify Services
+        run: |
+          kubectl get svc -n crud-app
+
+      # Verify Ingress
+      - name: Verify Ingress
+        run: |
+          kubectl get ingress -n crud-app
+
+      # Show Deployments
+      - name: Verify Deployments
+        run: |
+          kubectl get deployment -n crud-app
