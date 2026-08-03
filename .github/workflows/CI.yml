@@ -240,4 +240,4 @@ jobs:
         run: |
 
           docker push \
-          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}t
+          devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
