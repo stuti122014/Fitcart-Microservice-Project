@@ -3,11 +3,16 @@ name: CI-AKS-ACR-IMAGE-BUILD
 on:
   workflow_dispatch:
     inputs:
-
       image_tag:
         description: "Docker Image Tag (example: v1.0.0)"
         required: true
         type: string
+
+      build_all:
+        description: "Build Backend & Frontend"
+        required: true
+        type: boolean
+        default: false
 
       build_backend:
         description: "Build Backend Image"
@@ -21,13 +26,10 @@ on:
         type: boolean
         default: true
 
-
 permissions:
   contents: read
 
-
 jobs:
-
 
 # =====================================
 # Backend Build Scan Push
@@ -35,49 +37,34 @@ jobs:
 
   backend_build:
 
-    if: ${{ inputs.build_backend }}
+    if: ${{ inputs.build_all || inputs.build_backend }}
 
     runs-on: ubuntu-latest
-
 
     steps:
 
       - name: Checkout Code
         uses: actions/checkout@v4
 
-
-
       - name: Set Image Tag
         id: tag
         run: |
           IMAGE_TAG=${{ inputs.image_tag }}
-
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-
           echo "Using Image Tag: ${IMAGE_TAG}"
 
-
-
       # Azure Login
-
       - name: Azure Login
         uses: azure/login@v2
-
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-
-
       # ACR Login
-
       - name: Login to ACR
         run: |
           az acr login --name devnitoracr001
 
-
-
       # Install Trivy
-
       - name: Install Trivy
         run: |
           curl -sfL \
@@ -86,158 +73,86 @@ jobs:
 
           trivy --version
 
-
-
-
       # Backend Build
-
       - name: Build Backend Image
         run: |
-
           docker build \
           -t devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }} \
           ./3-tier-app-fitcart/backend
 
-
-
-
       # Backend Scan
-
       - name: Scan Backend Image
         run: |
-
           trivy image \
           --severity HIGH,CRITICAL \
           --exit-code 0 \
           devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
 
-
-
-
       # Backend Push
-
       - name: Push Backend Image
         run: |
-
           docker push \
           devnitoracr001.azurecr.io/backendimage:${{ steps.tag.outputs.image_tag }}
-
-
-
-
 
 # =====================================
 # Frontend Build Scan Push
 # =====================================
 
-
   frontend_build:
 
-
-    if: ${{ inputs.build_frontend }}
-
+    if: ${{ inputs.build_all || inputs.build_frontend }}
 
     runs-on: ubuntu-latest
 
-
-
     steps:
-
 
       - name: Checkout Code
         uses: actions/checkout@v4
 
-
-
-
-
       - name: Set Image Tag
         id: tag
         run: |
-
           IMAGE_TAG=${{ inputs.image_tag }}
-
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-
           echo "Using Image Tag: ${IMAGE_TAG}"
 
-
-
-
-
       # Azure Login
-
       - name: Azure Login
         uses: azure/login@v2
-
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-
-
-
-
-
       # ACR Login
-
       - name: Login to ACR
         run: |
-
           az acr login --name devnitoracr001
 
-
-
-
-
-
       # Install Trivy
-
       - name: Install Trivy
         run: |
-
           curl -sfL \
           https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
           | sh -s -- -b /usr/local/bin
 
           trivy --version
 
-
-
-
-
-
       # Frontend Build
-
       - name: Build Frontend Image
         run: |
-
           docker build \
           -t devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }} \
           ./3-tier-app-fitcart/frontend
 
-
-
-
-
       # Frontend Scan
-
       - name: Scan Frontend Image
         run: |
-
           trivy image \
           --severity HIGH,CRITICAL \
           --exit-code 0 \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
 
-
-
-
-
-
       # Frontend Push
-
       - name: Push Frontend Image
         run: |
-
           docker push \
           devnitoracr001.azurecr.io/frntndimage:${{ steps.tag.outputs.image_tag }}
