@@ -63,9 +63,9 @@ jobs:
             --create-namespace \
             --wait \
             --timeout 10m \
-            --set backend.image.repository=devnitoracr001.azurecr.io/backendimage \
+           
             --set backend.image.tag=${{ inputs.image_tag }} \
-            --set frontend.image.repository=devnitoracr001.azurecr.io/frntndimage \
+           
             --set frontend.image.tag=${{ inputs.image_tag }}
 
       # Verify Backend Rollout
