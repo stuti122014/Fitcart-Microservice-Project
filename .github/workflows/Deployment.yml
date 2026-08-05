@@ -84,7 +84,7 @@ jobs:
             --create-namespace \
             --rollback-on-failure \
             --wait \
-            --timeout 2m \
+            --timeout 5m \
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
             --set backend.image.tag=${{inputs.backendimage_tag }} \
             --set frontend.image.tag=${{inputs.frontendimage_tag }}
