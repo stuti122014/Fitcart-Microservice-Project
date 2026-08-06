@@ -1,5 +1,4 @@
 name: CI-AKS-ACR-IMAGE-BUILD
-
 on:
   workflow_dispatch:
     inputs:
