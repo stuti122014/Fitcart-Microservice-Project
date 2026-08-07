@@ -9,7 +9,7 @@ metadata:
     
 spec: 
   ingressClassName: azure-application-gateway
-  rules:  
+  -rules:  
     http:
       paths:
       - path: /api
