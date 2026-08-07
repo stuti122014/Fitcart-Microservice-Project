@@ -1,16 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
+
 metadata:
   name: backendfitcart-ingress
   namespace: dev-crud-app
   annotations:
     appgw.ingress.kubernetes.io/health-probe-path: "/api/gym/records"
-   
-    
-spec: 
+
+spec:
   ingressClassName: azure-application-gateway
-  -rules:  
-    http:
+
+  rules:
+  - http:
       paths:
       - path: /api
         pathType: Prefix
@@ -19,5 +20,3 @@ spec:
             name: fitcart-backend-service
             port:
               number: 8080
-
-    
