@@ -30,7 +30,7 @@ spec:
   ingressClassName: azure-application-gateway
 
   rules:
-  - host: fitcart.local
+  - host: 6weathers.com
     http:
       paths:
       - path: /
