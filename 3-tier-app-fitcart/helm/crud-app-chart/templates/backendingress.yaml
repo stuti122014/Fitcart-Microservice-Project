@@ -9,7 +9,8 @@ metadata:
 spec:
   ingressClassName: azure-application-gateway
   rules:
-  - http:
+ - host: ashvani.shop
+   http:
       paths:
       - path: /api
         pathType: Prefix
