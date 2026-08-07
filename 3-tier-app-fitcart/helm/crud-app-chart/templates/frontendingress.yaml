@@ -30,8 +30,8 @@ spec:
   ingressClassName: azure-application-gateway
 
   rules:
-  - host: 6weathers.com
-    http:
+  - host: ashvani.shop
+    https:
       paths:
       - path: /
         pathType: Prefix
