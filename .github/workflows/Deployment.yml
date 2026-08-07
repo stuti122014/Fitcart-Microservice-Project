@@ -82,7 +82,7 @@ jobs:
           helm upgrade --install dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
             --namespace ${{ inputs.environment }}-crud-app \
             --create-namespace \
-            --rollback-on-failure \
+            # --rollback-on-failure \
             --wait \
             --timeout 5m \
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
