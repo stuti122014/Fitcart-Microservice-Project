@@ -1,5 +1,4 @@
 name: CD-AKS-ACR-DEPLOY
-
 on:
   workflow_dispatch:
     inputs:
