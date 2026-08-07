@@ -5,17 +5,11 @@ metadata:
   namespace: dev-crud-app
   annotations:
     appgw.ingress.kubernetes.io/health-probe-path: "/api/gym/records"
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+   
     
-spec:
-  tls:
-  - hosts:
-    - ashvani.shop
-    secretName: ashvani-tls
+spec: 
   ingressClassName: azure-application-gateway
-  rules:
-  - host: ashvani.shop
+  rules:  
     http:
       paths:
       - path: /api
