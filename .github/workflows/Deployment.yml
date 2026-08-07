@@ -1,4 +1,131 @@
+# name: CD-AKS-ACR-DEPLOY
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       backendimage_tag:
+#         description: "Backend Image"
+#         required: true
+#         type: string
+#       frontendimage_tag:
+#         description: "Frontend Image"
+#         required: true
+#         type: string  
+#       environment:
+#             description: "Deployment Environment"
+#             required: true
+#             type: choice
+#             options:
+#               - dev
+#               - prod
+#             default: dev       
+        
+
+# permissions:
+#   contents: read
+
+# jobs:
+#   deploy:
+
+#     runs-on:  ubuntu-latest
+     
+
+#     steps:
+
+#       # Checkout Repository
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+
+#       # Azure Login
+#       - name: Azure Login
+#         uses: azure/login@v2
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+#       # Install kubectl
+#       - name: Setup kubectl
+#         uses: azure/setup-kubectl@v4
+
+#       # Install Helm
+#       - name: Setup Helm
+#         uses: azure/setup-helm@v4
+
+#       # Connect to AKS
+#       - name: Get AKS Credentials
+#         run: |
+#           az aks get-credentials \
+#             --resource-group dev-nitor-rg-002 \
+#             --name dev-nitor-cluster-01 \
+#             --overwrite-existing
+
+#       # Verify Cluster
+#       - name: Verify AKS Connection
+#         run: |
+#           kubectl config current-context
+#           kubectl get nodes
+
+#       # Helm Chart Validation
+#       - name: Helm Lint
+#         run: |
+#           helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
+#           -f ./3-tier-app-fitcart/helm/crud-app-chart/dev-values.yaml
+          
+#       - name: Debug Helm Template
+#         run: |
+#           helm template crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+#             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
+#             --set backend.image.tag=${{ inputs.backendimage_tag }} \
+#             --set frontend.image.tag=${{ inputs.frontendimage_tag }}          
+          
+
+#       - name: Deploy to AKS
+#         run: |
+#           helm upgrade --install dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+#             --namespace ${{ inputs.environment }}-crud-app \
+#             --create-namespace \
+#             --wait \
+#             --timeout 10m \
+#             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
+#             --set backend.image.tag=${{inputs.backendimage_tag }} \
+#             --set frontend.image.tag=${{inputs.frontendimage_tag }}
+     
+          
+
+#       # # Verify Backend Rollout
+#       # - name: Verify Backend Rollout
+#       #   run: |
+#       #     kubectl rollout status deployment/fitcart-backend \
+#       #     -n crud-app \
+#       #     --timeout=5m
+
+#       # # Verify Frontend Rollout
+#       # - name: Verify Frontend Rollout
+#       #   run: |
+#       #     kubectl rollout status deployment/fitcart-frontend \
+#       #     -n dev-crud-app \
+#       #     --timeout=5m
+
+#       # # Verify Pods
+#       # - name: Verify Pods
+#       #   run: |
+#       #     kubectl get pods -n dev-crud-app -o wide
+
+#       # # Verify Services
+      
+#       # - name: Verify Services
+#       #   run: |
+#       #     kubectl get svc -n dev-crud-app
+
+#       # # Verify Ingress
+#       # - name: Verify Ingress
+#       #   run: |
+#       #     kubectl get ingress -n crud-app
+
+#       # # Show Deployments
+#       # - name: Verify Deployments
+#       #   run: |
+#       #     kubectl get deployment -n crud-app
 name: CD-AKS-ACR-DEPLOY
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,78 +133,85 @@ on:
         description: "Backend Image"
         required: true
         type: string
+
       frontendimage_tag:
         description: "Frontend Image"
         required: true
-        type: string  
+        type: string
+
       environment:
-            description: "Deployment Environment"
-            required: true
-            type: choice
-            options:
-              - dev
-              - prod
-            default: dev       
-        
+        description: "Deployment Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: dev
+
 
 permissions:
   contents: read
 
+
 jobs:
   deploy:
 
-    runs-on:  ubuntu-latest
-     
+    runs-on: ubuntu-latest
 
     steps:
 
-      # Checkout Repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Azure Login
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Install kubectl
+
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      # Install Helm
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      # Connect to AKS
+
       - name: Get AKS Credentials
+        shell: bash
         run: |
           az aks get-credentials \
             --resource-group dev-nitor-rg-002 \
             --name dev-nitor-cluster-01 \
             --overwrite-existing
 
-      # Verify Cluster
+
       - name: Verify AKS Connection
+        shell: bash
         run: |
           kubectl config current-context
           kubectl get nodes
 
-      # Helm Chart Validation
+
       - name: Helm Lint
+        shell: bash
         run: |
           helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
-          -f ./3-tier-app-fitcart/helm/crud-app-chart/dev-values.yaml
-          
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml
+
+
       - name: Debug Helm Template
+        shell: bash
         run: |
-          helm template crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+          helm template dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
             --set backend.image.tag=${{ inputs.backendimage_tag }} \
-            --set frontend.image.tag=${{ inputs.frontendimage_tag }}          
-          
+            --set frontend.image.tag=${{ inputs.frontendimage_tag }}
+
 
       - name: Deploy to AKS
+        shell: bash
         run: |
           helm upgrade --install dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
             --namespace ${{ inputs.environment }}-crud-app \
@@ -85,42 +219,13 @@ jobs:
             --wait \
             --timeout 10m \
             -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
-            --set backend.image.tag=${{inputs.backendimage_tag }} \
-            --set frontend.image.tag=${{inputs.frontendimage_tag }}
-     
-          
+            --set backend.image.tag=${{ inputs.backendimage_tag }} \
+            --set frontend.image.tag=${{ inputs.frontendimage_tag }}
 
-      # # Verify Backend Rollout
-      # - name: Verify Backend Rollout
-      #   run: |
-      #     kubectl rollout status deployment/fitcart-backend \
-      #     -n crud-app \
-      #     --timeout=5m
 
-      # # Verify Frontend Rollout
-      # - name: Verify Frontend Rollout
-      #   run: |
-      #     kubectl rollout status deployment/fitcart-frontend \
-      #     -n dev-crud-app \
-      #     --timeout=5m
+      - name: Verify Deployment
+        shell: bash
+        run: |
+          kubectl get pods -n ${{ inputs.environment }}-crud-app
+          kubectl get deployments -n ${{ inputs.environment }}-crud-app
 
-      # # Verify Pods
-      # - name: Verify Pods
-      #   run: |
-      #     kubectl get pods -n dev-crud-app -o wide
-
-      # # Verify Services
-      
-      # - name: Verify Services
-      #   run: |
-      #     kubectl get svc -n dev-crud-app
-
-      # # Verify Ingress
-      # - name: Verify Ingress
-      #   run: |
-      #     kubectl get ingress -n crud-app
-
-      # # Show Deployments
-      # - name: Verify Deployments
-      #   run: |
-      #     kubectl get deployment -n crud-app
