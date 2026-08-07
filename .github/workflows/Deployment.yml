@@ -125,7 +125,6 @@
 #       #   run: |
 #       #     kubectl get deployment -n crud-app
 name: CD-AKS-ACR-DEPLOY
-
 on:
   workflow_dispatch:
     inputs:
