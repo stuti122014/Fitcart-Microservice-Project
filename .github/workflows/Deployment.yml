@@ -1,4 +1,6 @@
+
 name: CD-AKS-ACR-DEPLOY
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,88 +8,89 @@ on:
         description: "Backend Image"
         required: true
         type: string
+
       frontendimage_tag:
         description: "Frontend Image"
         required: true
-        type: string  
-      environment:
-            description: "Deployment Environment"
-            required: true
-            type: choice
-            options:
-              - dev
-              - prod
-            default: dev       
-        
+        type: string
 
-        permissions:
-        contents: read
-        
-        jobs:
-        deploy:
-        
-        runs-on:  ubuntu-latest
-        
-        
-        steps:
-        
-        # Checkout Repository
-        - name: Checkout Code
+      environment:
+        description: "Deployment Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: dev
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
-        
-        # Azure Login        
-        - name: Azure Login
+
+      # Azure Login
+      - name: Azure Login
         uses: azure/login@v2
         with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
-        # Install kubectl
-        - name: Setup kubectl
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Install kubectl
+      - name: Setup kubectl
         uses: azure/setup-kubectl@v4
-        
-        # Install Helm
-        - name: Setup Helm
+
+      # Install Helm
+      - name: Setup Helm
         uses: azure/setup-helm@v4
-        
-        # Connect to AKS
-        - name: Get AKS Credentials
+
+      # Connect to AKS
+      - name: Get AKS Credentials
         run: |
-        az aks get-credentials \
-        --resource-group dev-nitor-rg-002 \
-        --name dev-nitor-cluster-01 \
-        --overwrite-existing
-        
-        # Verify Cluster
-        - name: Verify AKS Connection
+          az aks get-credentials \
+            --resource-group dev-nitor-rg-002 \
+            --name dev-nitor-cluster-01 \
+            --overwrite-existing
+
+      # Verify Cluster
+      - name: Verify AKS Connection
         run: |
-        kubectl config current-context
-        kubectl get nodes
-        
-        # Helm Chart Validation
-        - name: Helm Lint
-          run: |
-        helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
-        -f ./3-tier-app-fitcart/helm/crud-app-chart/dev-values.yaml
-          
-              - name: Debug Helm Template
-                run: |
-                  helm template crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-                    -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
-                    --set backend.image.tag=${{ inputs.backendimage_tag }} \
-                    --set frontend.image.tag=${{ inputs.frontendimage_tag }}          
-                  
-        
-              - name: Deploy to AKS
-                run: |
-                  helm upgrade --install dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
-                    --namespace ${{ inputs.environment }}-crud-app \
-                    --create-namespace \
-                    --wait \
-                    --timeout 10m \
-                    -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
-                    --set backend.image.tag=${{inputs.backendimage_tag }} \
-                    --set frontend.image.tag=${{inputs.frontendimage_tag }}
-     
+          kubectl config current-context
+          kubectl get nodes
+
+      # Helm Chart Validation
+      - name: Helm Lint
+        run: |
+          helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml
+
+      # Debug Helm Template
+      - name: Debug Helm Template
+        run: |
+          helm template crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
+            --set backend.image.tag=${{ inputs.backendimage_tag }} \
+            --set frontend.image.tag=${{ inputs.frontendimage_tag }}
+
+      # Deploy to AKS
+      - name: Deploy to AKS
+        run: |
+          helm upgrade --install dev-crud-app ./3-tier-app-fitcart/helm/crud-app-chart \
+            --namespace ${{ inputs.environment }}-crud-app \
+            --create-namespace \
+            --wait \
+            --timeout 10m \
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml \
+            --set backend.image.tag=${{ inputs.backendimage_tag }} \
+            --set frontend.image.tag=${{ inputs.frontendimage_tag }}
+# ```
+
           
 
 #       # # Verify Backend Rollout
