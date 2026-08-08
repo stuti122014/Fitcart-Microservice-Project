@@ -137,9 +137,7 @@ Clear separation of CI (build & package) and CD (deploy) responsibilities
 AGIC add-on requires the AKS cluster to use Azure CNI (Node Subnet) networking; it is not supported with Azure CNI Overlay.
 Ensure the AGIC identity has the required RBAC role (Contributor) on the Application Gateway resource for it to manage listeners, routing rules, and backend pools.
 
-**🤝 Contributing**
 
-Contributions are welcome. Please open an issue or submit a pull request for any improvements.
 
 
 
