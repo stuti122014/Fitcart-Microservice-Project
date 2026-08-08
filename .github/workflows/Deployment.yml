@@ -197,7 +197,7 @@ jobs:
         shell: bash
         run: |
           helm lint ./3-tier-app-fitcart/helm/crud-app-chart \
-            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-values.yaml
+            -f ./3-tier-app-fitcart/helm/crud-app-chart/${{ inputs.environment }}-dev-values.yaml
 
 
       - name: Debug Helm Template
