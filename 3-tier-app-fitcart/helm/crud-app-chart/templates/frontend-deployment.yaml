@@ -9,6 +9,7 @@ spec:
       app: fitcart-frontend
   template:
     metadata:
+      labels:
       # labels:kubectl describe ingress fitcart-ingress -n dev-crud-appkubectl get pods -A
         app: fitcart-frontend
     spec:
